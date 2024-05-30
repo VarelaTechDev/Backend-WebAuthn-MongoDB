@@ -1,0 +1,79 @@
+# IntelliJ IDEA specific files
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Gradle specific files
+.gradle/
+build/
+
+# Eclipse specific files
+.classpath
+.project
+.settings/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# BlueJ specific files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# Virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# Windows image file caches
+Thumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Maven
+log/
+target/
+
+# Gradle
+.gradle/
+build/
+
+# User-specific files
+*.env
+
+# Run the application locally
+.vscode/
+*.vscode/
+.DS_Store
+
+# Additional
+# Windows
+*.exe
+*.dll
+*.com
+*.bat
+*.sh
+
+# macOS
+*.dmg
+*.pkg
+*.app
