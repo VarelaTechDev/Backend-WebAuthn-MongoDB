@@ -51,7 +51,7 @@ public class ProjectConfig {
                         .name(relyingPartyName)
                         .build())
                 .credentialRepository(credentialService)
-                .origins(origins)
+                //.origins(origins)
                 .build();
     }
 
