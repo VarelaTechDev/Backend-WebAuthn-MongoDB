@@ -1,0 +1,13 @@
+<configuration>
+    <logger name="org.springframework.test.context" level="ERROR"/>
+    <logger name="org.mockito" level="ERROR"/>
+    <root level="ERROR">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+</configuration>

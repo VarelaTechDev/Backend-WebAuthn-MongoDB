@@ -1,0 +1,63 @@
+{
+  "registrationId" : "00339928-7a24-4c4d-b455-1e0fe84a1cbd",
+  "publicKeyCredentialCreationOptions" : {
+    "rp" : {
+      "name" : "Example Application",
+      "id" : "localhost"
+    },
+    "user" : {
+      "name" : "test-username",
+      "displayName" : "test-username",
+      "id" : "Zlkj1rHJmhoU5iJB"
+    },
+    "challenge" : "Axb6FQEdcInav9tCeOBu6NaI4FkPYvYeO65lTpJFHrE",
+    "pubKeyCredParams" : [ {
+      "alg" : -7,
+      "type" : "public-key"
+    }, {
+      "alg" : -8,
+      "type" : "public-key"
+    }, {
+      "alg" : -35,
+      "type" : "public-key"
+    }, {
+      "alg" : -36,
+      "type" : "public-key"
+    }, {
+      "alg" : -257,
+      "type" : "public-key"
+    }, {
+      "alg" : -258,
+      "type" : "public-key"
+    }, {
+      "alg" : -259,
+      "type" : "public-key"
+    } ],
+    "timeout" : {
+      "empty" : false,
+      "present" : true
+    },
+    "excludeCredentials" : {
+      "empty" : true,
+      "present" : false
+    },
+    "authenticatorSelection" : {
+      "empty" : false,
+      "present" : true
+    },
+    "attestation" : "none",
+    "extensions" : {
+      "appidExclude" : {
+        "empty" : false,
+        "present" : true
+      },
+      "credProps" : true,
+      "largeBlob" : {
+        "empty" : true,
+        "present" : false
+      },
+      "uvm" : null
+    }
+  },
+  "username" : "test-username"
+}
