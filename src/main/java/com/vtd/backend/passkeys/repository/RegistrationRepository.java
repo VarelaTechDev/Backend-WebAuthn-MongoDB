@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface RegistrationRepository extends MongoRepository<RegistrationStartResponse, String> {
     Optional<RegistrationStartResponse> findByRegistrationId(String registrationId);
+    Optional<RegistrationStartResponse> findByUsername(String username);
 }

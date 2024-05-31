@@ -6,6 +6,7 @@ import com.vtd.backend.passkeys.models.RegistrationFinishRequest;
 import com.vtd.backend.passkeys.models.ErrorResponse;
 import com.vtd.backend.passkeys.exception.CustomRegistrationFailedException;
 import com.vtd.backend.passkeys.service.RegistrationService;
+import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +24,7 @@ public class RegisterController {
     private final RegistrationService registrationService;
 
     @PostMapping("/registration/start")
-    public ResponseEntity<?> startRegistration(@RequestParam(required = false) String username) {
+    public ResponseEntity<?> startRegistration(@RequestParam String username) {
         if (username == null || username.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(new ErrorResponse("Username cannot be null or empty"));
         }
@@ -34,9 +35,11 @@ public class RegisterController {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(new ErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
+            System.out.println("ERROR " + e.getMessage());
             return new ResponseEntity<>(new ErrorResponse("Internal server error"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     @PostMapping("/registration/finish")
     public ResponseEntity<String> registrationFinish(@RequestBody RegistrationFinishRequest registrationFinishRequest) {
