@@ -20,6 +20,7 @@ import com.yubico.webauthn.data.AuthenticatorSelectionCriteria;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.COSEAlgorithmIdentifier;
 import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
+import com.yubico.webauthn.data.PublicKeyCredential;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.data.PublicKeyCredentialParameters;
 import com.yubico.webauthn.data.PublicKeyCredentialType;
@@ -190,7 +191,7 @@ public class RegistrationService {
         registrationStartResponse.setRegistrationId(registrationChallenge.getRegistrationId());
         registrationStartResponse.setUsername(username);
         registrationStartResponse.setPublicKeyCredentialCreationOptions(publicKeyCredentialCreationOptions);
-
+        System.out.println("Registration ID: " + registrationStartResponse.getRegistrationId());
         return registrationStartResponse;
 
 //        // Serialize to JSON
@@ -206,33 +207,37 @@ public class RegistrationService {
     }
 
 
-    public void finishRegistration(RegistrationFinishRequest registrationFinishRequest) throws CustomRegistrationFailedException {
-        Optional<RegistrationStartResponse> startResponseOptional = registrationRepository.findByRegistrationId(registrationFinishRequest.getRegistrationId());
+    public void finishRegistration(RegistrationFinishRequest registrationFinishRequest) throws CustomRegistrationFailedException, JsonProcessingException {
+        System.out.println("Registration ID in second step: " + registrationFinishRequest.getRegistrationId());
+        System.out.println("BREAKS HERE???");
+        Optional<RegistrationChallenge> startResponseOptional = registrationChallengeRepository.findByRegistrationId(registrationFinishRequest.getRegistrationId());
+        System.out.println("SUCCESSFUL QUERY");
 
         if (startResponseOptional.isEmpty()) {
+            System.out.println("ITS EMPTY");
             throw new CustomRegistrationFailedException("Registration ID not found");
         }
+        System.out.println("BEFORE START RESPONSE");
+        PublicKeyCredentialCreationOptions deserializedOptions = WebAuthnUtils.deserializePublicKeyCredentialCreationOptions(startResponseOptional.get().getPublicKeyCredentialCreationOptionsJson());
 
-        RegistrationStartResponse startResponse = startResponseOptional.get();
+        PublicKeyCredentialCreationOptions requestObject = deserializedOptions;
+        PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> responseObject = registrationFinishRequest.getCredential();
 
-        // Grab the request from our database/cache
-        // Response we grab from our client response
-//
-//        try {
-//            RegistrationResult registrationResult = relyingParty
-//                    .finishRegistration(FinishRegistrationOptions.builder()
-//                            .request() //PublicKeyCredentialCreationOptions
-//                            .response()// PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs >
-//                            .build()
-//            );
-//        }
-
-        // Verify the challenge
-        // TODO: FIX THIS
-//        if (!startResponse.getPublicKeyCredentialCreationOptions().getChallenge().equals(ByteArray.fromBase64Url(registrationFinishRequest.getCredential().getResponse().getClientData().getChallenge()))) {
-//            throw new CustomRegistrationFailedException("Challenge mismatch");
-//        }
-
-        // Your existing finish registration logic
+        System.out.println("BEFORE THE TRY");
+        try {
+            RegistrationResult registrationResult = relyingParty.finishRegistration(
+                    FinishRegistrationOptions.builder()
+                            .request(requestObject)
+                            .response(responseObject)
+                            .build()
+            );
+            // Handle the successful registration (e.g., save to the database)
+            // saveRegistrationResult(registrationResult);
+        } catch (Exception e) {
+            System.out.println("AN EXCEWPTION WAS CAUGHT");
+            System.out.println(e.getCause());
+            throw new CustomRegistrationFailedException("Registration failed: " + e.getMessage());
+        }
+        System.out.println("WE MADE IT GAMERS!!!");
     }
 }

@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface RegistrationChallengeRepository extends MongoRepository<RegistrationChallenge, String> {
     Optional<RegistrationChallenge> findByUsername(String username);
+    Optional<RegistrationChallenge> findByRegistrationId(String registrationId);
 }

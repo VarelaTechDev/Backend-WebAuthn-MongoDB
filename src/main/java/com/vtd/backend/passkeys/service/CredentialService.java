@@ -33,11 +33,13 @@ public class CredentialService implements CredentialRepository {
 
     @Override
     public Optional<RegisteredCredential> lookup(ByteArray credentialId, ByteArray userHandle) {
+
         return Optional.empty();
     }
 
     @Override
     public Set<RegisteredCredential> lookupAll(ByteArray credentialId) {
-        return null;
+        System.out.println("LOOK UP ALL WAS INVOKED");
+        return new HashSet<>();
     }
 }

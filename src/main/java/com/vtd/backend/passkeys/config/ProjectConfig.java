@@ -34,16 +34,14 @@ public class ProjectConfig {
     @Value("${app.relying-party-origins}")
     private String relyingPartyOrigins;
 
+    @Value("${app.relying-party-appId}")
+    private String relyingPartyAppId;
+
     @Bean
     public RelyingParty relyingParty(CredentialService credentialService) {
-        Set<String> origins;
-        if (relyingPartyOrigins.contains(",")) {
-            origins = Arrays.stream(relyingPartyOrigins.split(","))
-                    .map(String::trim)
-                    .collect(Collectors.toSet());
-        } else {
-            origins = Collections.singleton(relyingPartyOrigins.trim());
-        }
+        Set<String> origins = Arrays.stream(relyingPartyOrigins.split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
 
         return RelyingParty.builder()
                 .identity(RelyingPartyIdentity.builder()
@@ -51,12 +49,14 @@ public class ProjectConfig {
                         .name(relyingPartyName)
                         .build())
                 .credentialRepository(credentialService)
-                //.origins(origins)
+                .origins(origins)
                 .build();
     }
 
     @Bean
     public AppId appId() throws InvalidAppIdException {
-        return new AppId("https://localhost:8080");
+        // HTTP IS NOT SUPPORTED!!!!
+        // FRONT END MUST BE IN HTTPS!!!
+        return new AppId(relyingPartyAppId);
     }
 }

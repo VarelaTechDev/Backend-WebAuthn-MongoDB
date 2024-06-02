@@ -43,8 +43,10 @@ public class RegisterController {
 
     @PostMapping("/registration/finish")
     public ResponseEntity<String> registrationFinish(@RequestBody RegistrationFinishRequest registrationFinishRequest) {
+        System.out.println("MADE IT IN THE CONTROLLER");
         try {
-//            registrationService.finishRegistration(registrationFinishRequest);
+            System.out.println("BEFORE");
+            registrationService.finishRegistration(registrationFinishRequest);
             return new ResponseEntity<>("Registration successful", HttpStatus.OK);
         } catch (CustomRegistrationFailedException e) {
             return new ResponseEntity<>("Error finishing registration: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -52,4 +54,5 @@ public class RegisterController {
             return new ResponseEntity<>("Unexpected error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }
