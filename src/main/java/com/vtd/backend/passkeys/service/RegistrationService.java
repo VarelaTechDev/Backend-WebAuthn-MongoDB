@@ -1,6 +1,8 @@
 package com.vtd.backend.passkeys.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.vtd.backend.passkeys.models.RegistrationChallenge;
+import com.vtd.backend.passkeys.repository.RegistrationChallengeRepository;
 import com.vtd.backend.passkeys.utils.BytesUtil;
 import com.vtd.backend.passkeys.entities.AccountEntity;
 import com.vtd.backend.passkeys.models.RegistrationStartResponse;
@@ -8,11 +10,16 @@ import com.vtd.backend.passkeys.models.RegistrationFinishRequest;
 import com.vtd.backend.passkeys.exception.CustomRegistrationFailedException;
 import com.vtd.backend.passkeys.repository.AccountRepository;
 import com.vtd.backend.passkeys.repository.RegistrationRepository;
+import com.vtd.backend.passkeys.utils.WebAuthnUtils;
+import com.yubico.webauthn.FinishRegistrationOptions;
+import com.yubico.webauthn.RegistrationResult;
 import com.yubico.webauthn.RelyingParty;
 import com.yubico.webauthn.StartRegistrationOptions;
+import com.yubico.webauthn.data.AuthenticatorAttestationResponse;
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria;
 import com.yubico.webauthn.data.ByteArray;
 import com.yubico.webauthn.data.COSEAlgorithmIdentifier;
+import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.data.PublicKeyCredentialParameters;
 import com.yubico.webauthn.data.PublicKeyCredentialType;
@@ -24,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.security.NoSuchAlgorithmException;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,9 +42,10 @@ import java.util.UUID;
 @Slf4j
 public class RegistrationService {
 
-    private static final Long TIMEOUT = 20000L;
+    private static final Long TIMEOUT = 20000L; // 20 seconds
     private final AccountRepository accountRepository;
     private final RegistrationRepository registrationRepository;
+    private final RegistrationChallengeRepository registrationChallengeRepository;
     private final RelyingParty relyingParty;
     private final AppId appId;
 
@@ -141,11 +151,47 @@ public class RegistrationService {
                 .pubKeyCredParams(pubKeyCredParams)
                 .build();
 
-        // Create a new registration response
+        // Serialize to JSON
+        String publicKeyCredentialCreationOptionsJson = publicKeyCredentialCreationOptions.toCredentialsCreateJson();
+
+        // Check if a registration challenge already exists for the username
+        Optional<RegistrationChallenge> existingChallengeOpt = registrationChallengeRepository.findByUsername(username);
+
+        RegistrationChallenge registrationChallenge;
+        if (existingChallengeOpt.isPresent()) {
+            // Update existing RegistrationChallenge
+            registrationChallenge = existingChallengeOpt.get();
+            registrationChallenge.setPublicKeyCredentialCreationOptionsJson(publicKeyCredentialCreationOptionsJson);
+            registrationChallenge.setCreatedAt(new Date());
+        } else {
+            // Create a new registration challenge
+            registrationChallenge = new RegistrationChallenge();
+            registrationChallenge.setUsername(username);
+            registrationChallenge.setPublicKeyCredentialCreationOptionsJson(publicKeyCredentialCreationOptionsJson);
+            registrationChallenge.setCreatedAt(new Date());
+        }
+
+        // Generate a new registration ID every time
+        registrationChallenge.setRegistrationId(UUID.randomUUID().toString());
+
+        // Set the expiration time dynamically based on the TIMEOUT value
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.MILLISECOND, TIMEOUT.intValue());
+        registrationChallenge.setExpiresAt(calendar.getTime());
+
+        System.out.println("Challenge we are saving: " + publicKeyCredentialCreationOptions.getChallenge().getBase64());
+
+        // Save the RegistrationChallenge (will update if it exists, or create if it does not)
+        registrationChallengeRepository.save(registrationChallenge);
+
+        // Create the RegistrationStartResponse to return to the client
         RegistrationStartResponse registrationStartResponse = new RegistrationStartResponse();
-        registrationStartResponse.setRegistrationId(UUID.randomUUID().toString());
+        registrationStartResponse.setRegistrationId(registrationChallenge.getRegistrationId());
         registrationStartResponse.setUsername(username);
         registrationStartResponse.setPublicKeyCredentialCreationOptions(publicKeyCredentialCreationOptions);
+
+        return registrationStartResponse;
 
 //        // Serialize to JSON
 //        String jsonString = publicKeyCredentialCreationOptions.toCredentialsCreateJson();
@@ -155,7 +201,8 @@ public class RegistrationService {
 //        PublicKeyCredentialCreationOptions deserializedOptions = WebAuthnUtils.deserializePublicKeyCredentialCreationOptions(jsonString);
 //        System.out.println("Deserialized Object: " + deserializedOptions);
 
-        return registrationStartResponse;
+//        registrationStartResponseRepository.save(registrationStartResponse);
+//        return registrationStartResponse;
     }
 
 
@@ -167,6 +214,18 @@ public class RegistrationService {
         }
 
         RegistrationStartResponse startResponse = startResponseOptional.get();
+
+        // Grab the request from our database/cache
+        // Response we grab from our client response
+//
+//        try {
+//            RegistrationResult registrationResult = relyingParty
+//                    .finishRegistration(FinishRegistrationOptions.builder()
+//                            .request() //PublicKeyCredentialCreationOptions
+//                            .response()// PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs >
+//                            .build()
+//            );
+//        }
 
         // Verify the challenge
         // TODO: FIX THIS
