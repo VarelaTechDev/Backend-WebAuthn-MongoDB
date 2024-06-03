@@ -1,6 +1,7 @@
 package com.vtd.backend.passkeys.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.vtd.backend.passkeys.entities.PasskeyEntity;
 import com.vtd.backend.passkeys.models.RegistrationChallenge;
 import com.vtd.backend.passkeys.repository.RegistrationChallengeRepository;
 import com.vtd.backend.passkeys.utils.BytesUtil;
@@ -32,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -192,6 +194,8 @@ public class RegistrationService {
         registrationStartResponse.setUsername(username);
         registrationStartResponse.setPublicKeyCredentialCreationOptions(publicKeyCredentialCreationOptions);
         System.out.println("Registration ID: " + registrationStartResponse.getRegistrationId());
+
+        System.out.println("THE IS FOR THE USER IS " + account.getId());
         return registrationStartResponse;
 
 //        // Serialize to JSON
@@ -221,23 +225,62 @@ public class RegistrationService {
         PublicKeyCredentialCreationOptions deserializedOptions = WebAuthnUtils.deserializePublicKeyCredentialCreationOptions(startResponseOptional.get().getPublicKeyCredentialCreationOptionsJson());
 
         PublicKeyCredentialCreationOptions requestObject = deserializedOptions;
+
+        // Used to grab essential parts
+        UserIdentity userIdentity = requestObject.getUser();
         PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs> responseObject = registrationFinishRequest.getCredential();
 
         System.out.println("BEFORE THE TRY");
+        RegistrationResult registrationResult;
         try {
-            RegistrationResult registrationResult = relyingParty.finishRegistration(
+            registrationResult = relyingParty.finishRegistration(
                     FinishRegistrationOptions.builder()
                             .request(requestObject)
                             .response(responseObject)
                             .build()
             );
+
+            System.out.println("SUCCESSFULY RAN FINISH");
+            // Save the result in the database
+            String id = BytesUtil.bytesToString(userIdentity.getId().getBytes());
+            String credentialIdBase64 = registrationResult.getKeyId().getId().getBase64();
+            byte[] publicKey = registrationResult.getPublicKeyCose().getBytes();
+            Long count = registrationRepository.count();
+            System.out.println("COUNT IS " + count);
+
+            System.out.println("BEFORE DATABASE CALL");
+            // Create the PasskeyEntity
+            PasskeyEntity passkeyEntity = new PasskeyEntity(credentialIdBase64, count, publicKey);
+            System.out.println("CREATED PASSKEY ENTITY");
+            // Find the account and add the passkey
+            Optional<AccountEntity> accountOptional = accountRepository.findById(id);
+            // FIND BY ID??
+            System.out.println("AFTER FIND BY ID");
+            if (accountOptional.isPresent()) {
+                AccountEntity account = accountOptional.get();
+                if (account.getPasskeys() == null) {
+                    account.setPasskeys(new ArrayList<>());
+                }
+                account.getPasskeys().add(passkeyEntity);
+
+                // Save the updated account
+                accountRepository.save(account);
+                System.out.println("DATABASE SUCCESSFUL");
+            } else {
+                System.out.println("Account not found with ID: " + id);
+                throw new CustomRegistrationFailedException("Account not found with ID: " + id);
+            }
+
+            System.out.println("DATABASE SUCCESSFUL");
+
+
             // Handle the successful registration (e.g., save to the database)
             // saveRegistrationResult(registrationResult);
         } catch (Exception e) {
-            System.out.println("AN EXCEWPTION WAS CAUGHT");
-            System.out.println(e.getCause());
+
+            System.out.println("Cause: " + e.getCause());
             throw new CustomRegistrationFailedException("Registration failed: " + e.getMessage());
         }
-        System.out.println("WE MADE IT GAMERS!!!");
+        System.out.println("WE MADE IT GAMERS");
     }
 }
