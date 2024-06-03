@@ -263,6 +263,8 @@ public class RegistrationService {
                 }
                 account.getPasskeys().add(passkeyEntity);
 
+                System.out.println("Passkey Credential ID " + passkeyEntity.getCredentialId());
+
                 // Save the updated account
                 accountRepository.save(account);
                 System.out.println("DATABASE SUCCESSFUL");

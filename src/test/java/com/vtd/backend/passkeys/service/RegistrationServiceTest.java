@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.vtd.backend.passkeys.entities.AccountEntity;
 import com.vtd.backend.passkeys.models.RegistrationStartResponse;
 import com.vtd.backend.passkeys.repository.AccountRepository;
+import com.vtd.backend.passkeys.repository.RegistrationChallengeRepository;
 import com.vtd.backend.passkeys.repository.RegistrationRepository;
 import com.yubico.webauthn.RelyingParty;
 import com.yubico.webauthn.data.AttestationConveyancePreference;
@@ -37,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,11 +49,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 class RegistrationServiceTest {
 
+
     @Mock
     private AccountRepository accountRepository;
 
     @Mock
     private RegistrationRepository registrationRepository;
+
+    @Mock
+    private RegistrationChallengeRepository registrationChallengeRepository;
 
     @InjectMocks
     private RegistrationService registrationService;
@@ -62,6 +69,7 @@ class RegistrationServiceTest {
     @BeforeEach
     void setUp() throws InvalidAppIdException {
         // Initialize AppId
+        // HTTP is not supported for App IDs (by Chrome). Use HTTPS instead.
         appId = new AppId("https://localhost:8080");
 
         // Initialize RelyingParty
@@ -76,16 +84,16 @@ class RegistrationServiceTest {
                 .build();
 
         // Inject actual instances into the service
-        registrationService = new RegistrationService(accountRepository, registrationRepository, relyingParty, appId);
+        registrationService = new RegistrationService(accountRepository, registrationRepository, registrationChallengeRepository, relyingParty, appId);
 
         // Initialize test data
         testAccount = new AccountEntity();
-        testAccount.setId(new ObjectId().toString()); // Use a valid ObjectId string
+        testAccount.setId(UUID.randomUUID().toString()); // Use a valid UUID string
         testAccount.setUsername("test-username");
         UserIdentity userIdentity = UserIdentity.builder()
                 .name("test-username")
                 .displayName("test-username")
-                .id(new ByteArray(testAccount.getId().getBytes())) // Use the ObjectId string
+                .id(new ByteArray(testAccount.getId().getBytes())) // Use the UUID string
                 .build();
 
         AuthenticatorSelectionCriteria authenticatorSelection = AuthenticatorSelectionCriteria.builder()
@@ -115,9 +123,10 @@ class RegistrationServiceTest {
         // Mock the behavior of accountRepository
         when(accountRepository.findByUsername("test-username")).thenReturn(Optional.of(testAccount));
 
+        System.out.println("BREAKS BEFORE HERE");
         // Call the method under test
-        RegistrationStartResponse response = registrationService.startRegistration("test-username");
-
+        RegistrationStartResponse response = registrationService.startRegistration("a2-a2");
+        System.out.println("MADE IT PASS");
         // Verify the response
         assertNotNull(response);
         assertEquals("test-username", response.getUsername());
