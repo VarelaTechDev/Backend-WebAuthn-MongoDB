@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
@@ -84,35 +85,50 @@ public class CredentialService implements CredentialRepository {
         return Optional.empty();
     }
 
-    /**
-     * Look up all credentials with the given credential ID, regardless of what user they're registered to.
-     *
-     * This is used to refuse registration of duplicate credential IDs. Therefore, under normal
-     * circumstances this method should only return zero or one credential (this is an expected
-     * consequence, not an interface requirement).
-     *
-     * @param credentialId the credential ID to look up
-     * @return a set of RegisteredCredential with the given credential ID
-     */
     @Override
     public Set<RegisteredCredential> lookupAll(ByteArray credentialId) {
-//        List<AccountEntity> accounts = mongoTemplate.findAll(AccountEntity.class);
-//        Set<RegisteredCredential> registeredCredentials = new HashSet<>();
-//
-//        for (AccountEntity account : accounts) {
-//            for (PasskeyEntity passkey : account.getPasskeys()) {
-//                if (passkey.getCredentialId().equals(credentialId.getBase64())) {
-//                    registeredCredentials.add(RegisteredCredential.builder()
-//                            .credentialId(credentialId)
-//                            .userHandle(new ByteArray(account.getAccountId().getBytes()))
-//                            .publicKeyCose(new ByteArray(passkey.getPublicKey()))
-//                            .signatureCount(passkey.getCount())
-//                            .build());
-//                }
-//            }
-//        }
-//
-//        return registeredCredentials;
+        System.out.println("INVOKED: LOOKUP ALL WAS INVOKED");
+
+        // Convert ByteArray to Base64 encoded string
+        String credentialIdBase64 = Base64.getEncoder().encodeToString(credentialId.getBytes());
+        System.out.println("CREDENTIAL ID BASE64: " + credentialIdBase64);
+
+        // Fetch all accounts
+        System.out.println("BEFORE FIND ALL");
+        List<AccountEntity> accounts = accountRepository.findAll();
+        System.out.println("AFTER FIND ALL");
+
+        for (AccountEntity account : accounts) {
+            System.out.println("Account size: " + accounts.size());
+            System.out.println("INSIDE ACCOUNT FOR LOOP");
+
+            // Initialize passkeys if null
+            if (account.getPasskeys() == null) {
+                account.setPasskeys(new ArrayList<>());
+            }
+
+            System.out.println("BEFORE ENTERING PASSKEY FOR LOOP");
+            System.out.println("PASSKEY SIZE: " + account.getPasskeys().size());
+            for (PasskeyEntity passkey : account.getPasskeys()) {
+                System.out.println("INSIDE PASSKEY FOR LOOP");
+
+                if (passkey.getCredentialId().equals(credentialIdBase64)) {
+                    System.out.println("CREDENTIAL ID MATCHED");
+                    RegisteredCredential registeredCredential = RegisteredCredential.builder()
+                            .credentialId(credentialId)
+                            .userHandle(new ByteArray(account.getAccountId().getBytes()))
+                            .publicKeyCose(new ByteArray(passkey.getPublicKey()))
+                            .signatureCount(passkey.getCount())
+                            .build();
+                    return Set.of(registeredCredential);
+                }
+                System.out.println("NO MATCH");
+            }
+            System.out.println("OUTSIDE PASSKEY FOR LOOP");
+        }
+        System.out.println("OUTSIDE ACCOUNT FOR LOOP");
+
         return new HashSet<>();
     }
+
 }
